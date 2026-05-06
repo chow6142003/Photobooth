@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <title>Capybara Photobooth</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(to right, #ffe0ec, #e0f7ff);
+    }
+    h1 {
+      color: #6b4f3b;
+    }
+    video {
+      border: 5px solid #6b4f3b;
+      border-radius: 10px;
+    }
+    .frame {
+      display: grid;
+      grid-template-columns: repeat(2, 150px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    canvas {
+      width: 150px;
+      height: 150px;
+      border: 8px solid pink;
+      border-radius: 15px;
+    }
+    button, select {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+    #countdown {
+      font-size: 30px;
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>📸 Capybara Photobooth 🦫</h1>
+<h2>Pameran STEAM 2026</h2>
+<p>Ambil 4 gambar dalam 30 saat!</p>
+
+<video id="video" width="300" height="225" autoplay></video>
+<br>
+
+<select id="colorPicker" onchange="changeFrameColor()">
+  <option value="pink">Pink</option>
+  <option value="skyblue">Biru</option>
+  <option value="lightgreen">Hijau</option>
+  <option value="yellow">Kuning</option>
+  <option value="purple">Ungu</option>
+</select>
+<br>
+
+<button onclick="startCapture()">Mula Snap</button>
+<div id="countdown"></div>
+
+<div class="frame">
+  <canvas id="c1"></canvas>
+  <canvas id="c2"></canvas>
+  <canvas id="c3"></canvas>
+  <canvas id="c4"></canvas>
+</div>
+
+<br>
+<button onclick="downloadStrip()">Download Gambar</button>
+
+<audio id="shutter" src="https://www.soundjay.com/camera/camera-shutter-click-01.mp3"></audio>
+
+<script>
+const video = document.getElementById('video');
+
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => alert("Tidak dapat akses kamera"));
+
+function changeFrameColor() {
+  const color = document.getElementById('colorPicker').value;
+  document.querySelectorAll('canvas').forEach(c => {
+    c.style.borderColor = color;
+  });
+}
+
+function startCapture() {
+  let count = 0;
+  const interval = 7500;
+
+  const capture = setInterval(async () => {
+    count++;
+    await countdown(3);
+    takePhoto(count);
+    if (count === 4) clearInterval(capture);
+  }, interval);
+}
+
+function countdown(seconds) {
+  return new Promise(resolve => {
+    let counter = seconds;
+    const el = document.getElementById('countdown');
+    el.innerText = counter;
+
+    const timer = setInterval(() => {
+      counter--;
+      el.innerText = counter;
+      if (counter <= 0) {
+        clearInterval(timer);
+        el.innerText = '';
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
+function takePhoto(num) {
+  const canvas = document.getElementById('c' + num);
+  const ctx = canvas.getContext('2d');
+  canvas.width = 150;
+  canvas.height = 150;
+
+  ctx.drawImage(video, 0, 0, 150, 150);
+
+  // lukis capybara simple
+  ctx.fillStyle = '#a67c52';
+  ctx.beginPath();
+  ctx.arc(120, 30, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(115, 25, 3, 0, Math.PI * 2);
+  ctx.arc(125, 25, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // teks
+  ctx.font = "10px Arial";
+  ctx.fillText("Pameran STEAM 2026", 10, 140);
+
+  document.getElementById('shutter').play();
+}
+
+function downloadStrip() {
+  const strip = document.createElement('canvas');
+  const ctx = strip.getContext('2d');
+  strip.width = 150;
+  strip.height = 600;
+
+  for (let i = 1; i <= 4; i++) {
+    const c = document.getElementById('c' + i);
+    ctx.drawImage(c, 0, (i-1)*150);
+  }
+
+  const link = document.createElement('a');
+  link.download = 'photobooth.png';
+  link.href = strip.toDataURL();
+  link.click();
+}
+</script>
+
+</body>
+</html>
